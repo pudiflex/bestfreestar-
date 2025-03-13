@@ -133,7 +133,7 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
 # Основная функция
 async def main() -> None:
     # Вставь сюда свой токен
-    application = Application.builder().token("YOUR_TELEGRAM_BOT_TOKEN").build()
+    application = Application.builder().token("7796947947:AAECkkEDnYm7yNclc2v-5XdxOaQvpXL84Mo").build()
 
     # Регистрация команд
     application.add_handler(CommandHandler("start", start))
