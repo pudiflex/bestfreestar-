@@ -28,7 +28,7 @@ def create_keyboard():
         [InlineKeyboardButton("📅 Вывести звёзды", callback_data='withdraw_stars')],
         [InlineKeyboardButton("📄 Задания", callback_data='tasks')],
         [InlineKeyboardButton("📅 Бонус", callback_data='bonus')],
-        [InlineKeyboardButton("🔙 Назад", callback_data='back')]  # Кнопка "Назад"
+        [InlineKeyboardButton("🔙 Назад", callback_data='back')]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -112,7 +112,7 @@ def handle_message(update: Update, context: CallbackContext) -> None:
             else:
                 # Отправляем заявку админу (тебе)
                 context.bot.send_message(
-                    chat_id=7863333069,
+                    chat_id=ADMIN_ID,
                     text=f"🚨 Новая заявка на вывод:\n\n"
                          f"ID пользователя: {user_id}\n"
                          f"Сумма: {amount} звёзд\n\n"
@@ -132,7 +132,8 @@ def handle_message(update: Update, context: CallbackContext) -> None:
 
 def main() -> None:
     # Вставь сюда свой токен
-    updater = Updater("@bestfreestar_bot")
+    updater = Updater("YOUR_TELEGRAM_BOT_TOKEN")
+
     dispatcher = updater.dispatcher
 
     # Регистрация команд
