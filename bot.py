@@ -139,7 +139,7 @@ def main() -> None:
     # Регистрация команд
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(CallbackQueryHandler(button_handler))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+    dispatcher.add_handler(MessageHandler(filters.text & ~filters.command, handle_message))
 
     # Запуск бота
     updater.start_polling()
