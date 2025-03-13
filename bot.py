@@ -1,5 +1,5 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, filters
 import json
 import os
 
@@ -33,7 +33,7 @@ def create_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 # Команда /start
-def start(update: Update, context: CallbackContext) -> None:
+async def start(update: Update, context: CallbackContext) -> None:
     user_id = str(update.message.from_user.id)
     user_data = load_user_data()
 
@@ -43,21 +43,21 @@ def start(update: Update, context: CallbackContext) -> None:
         save_user_data(user_data)
 
     # Отправляем сообщение с кнопками
-    update.message.reply_text(
+    await update.message.reply_text(
         "Выберите действие:",
         reply_markup=create_keyboard()
     )
 
 # Обработка нажатий на кнопки
-def button_handler(update: Update, context: CallbackContext) -> None:
+async def button_handler(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
-    query.answer()
+    await query.answer()
 
     user_id = str(query.from_user.id)
     user_data = load_user_data()
 
     if query.data == 'earn_stars':
-        query.edit_message_text(
+        await query.edit_message_text(
             text="📌 Вот способы заработать звёзды:\n\n"
                  "1. Пригласи друзей: +3 звезды за каждого.\n"
                  "2. Выполняй задания: смотри рекламу, проходи опросы.\n"
@@ -66,18 +66,18 @@ def button_handler(update: Update, context: CallbackContext) -> None:
         )
     elif query.data == 'withdraw_stars':
         if user_data[user_id]["stars"] >= 10:
-            query.edit_message_text(
+            await query.edit_message_text(
                 text=f"📅 Твой баланс: {user_data[user_id]['stars']} звёзд.\n"
                       "Введите сумму для вывода (минимум 10 звёзд):"
             )
             context.user_data["awaiting_withdrawal"] = True
         else:
-            query.edit_message_text(
+            await query.edit_message_text(
                 text="❌ Минимальная сумма для вывода — 10 звёзд. Продолжай зарабатывать!",
                 reply_markup=create_keyboard()
             )
     elif query.data == 'tasks':
-        query.edit_message_text(
+        await query.edit_message_text(
             text="📄 Список заданий:\n\n"
                  "1. Пригласить друга: +3 звезды.\n"
                  "2. Смотреть рекламу: +3 звезды.\n"
@@ -85,20 +85,20 @@ def button_handler(update: Update, context: CallbackContext) -> None:
             reply_markup=create_keyboard()
         )
     elif query.data == 'bonus':
-        query.edit_message_text(
+        await query.edit_message_text(
             text="🎉 Ты получил ежедневный бонус: +1 звезда!",
             reply_markup=create_keyboard()
         )
         user_data[user_id]["stars"] += 1
         save_user_data(user_data)
     elif query.data == 'back':
-        query.edit_message_text(
+        await query.edit_message_text(
             text="Главное меню:",
             reply_markup=create_keyboard()
         )
 
 # Обработка текстовых сообщений (для вывода звёзд)
-def handle_message(update: Update, context: CallbackContext) -> None:
+async def handle_message(update: Update, context: CallbackContext) -> None:
     user_id = str(update.message.from_user.id)
     user_data = load_user_data()
 
@@ -106,19 +106,19 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         try:
             amount = int(update.message.text)
             if amount < 10:
-                update.message.reply_text("❌ Минимальная сумма для вывода — 10 звёзд.")
+                await update.message.reply_text("❌ Минимальная сумма для вывода — 10 звёзд.")
             elif amount > user_data[user_id]["stars"]:
-                update.message.reply_text("❌ У тебя недостаточно звёзд.")
+                await update.message.reply_text("❌ У тебя недостаточно звёзд.")
             else:
                 # Отправляем заявку админу (тебе)
-                context.bot.send_message(
+                await context.bot.send_message(
                     chat_id=ADMIN_ID,
                     text=f"🚨 Новая заявка на вывод:\n\n"
                          f"ID пользователя: {user_id}\n"
                          f"Сумма: {amount} звёзд\n\n"
                          f"Подтверди или отклони заявку."
                 )
-                update.message.reply_text(
+                await update.message.reply_text(
                     "✅ Заявка на вывод отправлена. Ожидай подтверждения.",
                     reply_markup=create_keyboard()
                 )
@@ -126,24 +126,23 @@ def handle_message(update: Update, context: CallbackContext) -> None:
                 save_user_data(user_data)
                 context.user_data["awaiting_withdrawal"] = False
         except ValueError:
-            update.message.reply_text("❌ Введите число.")
+            await update.message.reply_text("❌ Введите число.")
     else:
-        update.message.reply_text("Используй кнопки для взаимодействия с ботом.")
+        await update.message.reply_text("Используй кнопки для взаимодействия с ботом.")
 
-def main() -> None:
+# Основная функция
+async def main() -> None:
     # Вставь сюда свой токен
-    updater = Updater("YOUR_TELEGRAM_BOT_TOKEN")
-
-    dispatcher = updater.dispatcher
+    application = Application.builder().token("YOUR_TELEGRAM_BOT_TOKEN").build()
 
     # Регистрация команд
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CallbackQueryHandler(button_handler))
-    dispatcher.add_handler(MessageHandler(filters.text & ~filters.command, handle_message))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CallbackQueryHandler(button_handler))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Запуск бота
-    updater.start_polling()
-    updater.idle()
+    await application.run_polling()
 
 if __name__ == '__main__':
-    main()
+    import asyncio
+    asyncio.run(main())
