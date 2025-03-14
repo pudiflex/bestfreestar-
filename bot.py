@@ -2,17 +2,12 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext, MessageHandler, filters
 import json
 import os
-import logging
 
 # Файл для хранения данных пользователей
 USER_DATA_FILE = "user_data.json"
 
 # Твой ID в Telegram для уведомлений
 ADMIN_ID = "7863333069"  # Замени на свой ID
-
-# Настройка логирования
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Загрузка данных пользователей
 def load_user_data():
@@ -24,7 +19,7 @@ def load_user_data():
 # Сохранение данных пользователей
 def save_user_data(data):
     with open(USER_DATA_FILE, "w") as file:
-        json.dump(data, file, indent=4)
+        json.dump(data, file)
 
 # Создание клавиатуры с кнопками
 def create_keyboard():
@@ -48,16 +43,7 @@ async def start(update: Update, context: CallbackContext) -> None:
         save_user_data(user_data)
 
     # Отправляем сообщение с кнопками
-    await update.message.reply_text(
-        "Выберите действие:",
-        reply_markup=create_keyboard()
-    )
-
-# Команда /help
-async def help_command(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text(
-        "Используйте команду /start для начала работы с ботом."
-    )
+    await update.message.reply_text("Выберите действие:", reply_markup=create_keyboard())
 
 # Обработка нажатий на кнопки
 async def button_handler(update: Update, context: CallbackContext) -> None:
@@ -76,7 +62,7 @@ async def button_handler(update: Update, context: CallbackContext) -> None:
             reply_markup=create_keyboard()
         )
     elif query.data == 'withdraw_stars':
-        if user_data.get(user_id, {}).get("stars", 0) >= 10:
+        if user_data[user_id]["stars"] >= 10:
             await query.edit_message_text(
                 text=f"📅 Твой баланс: {user_data[user_id]['stars']} звёзд.\n"
                       "Введите сумму для вывода (минимум 10 звёзд):"
@@ -96,12 +82,12 @@ async def button_handler(update: Update, context: CallbackContext) -> None:
             reply_markup=create_keyboard()
         )
     elif query.data == 'bonus':
-        user_data[user_id]["stars"] += 1
-        save_user_data(user_data)
         await query.edit_message_text(
             text="🎉 Ты получил ежедневный бонус: +1 звезда!",
             reply_markup=create_keyboard()
         )
+        user_data[user_id]["stars"] += 1
+        save_user_data(user_data)
     elif query.data == 'back':
         await query.edit_message_text(
             text="Главное меню:",
@@ -118,12 +104,12 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
             amount = int(update.message.text)
             if amount < 10:
                 await update.message.reply_text("❌ Минимальная сумма для вывода — 10 звёзд.")
-            elif amount > user_data.get(user_id, {}).get("stars", 0):
+            elif amount > user_data[user_id]["stars"]:
                 await update.message.reply_text("❌ У тебя недостаточно звёзд.")
             else:
                 # Отправляем заявку админу (тебе)
                 await context.bot.send_message(
-                    chat_id=7863333069
+                    chat_id=ADMIN_ID,
                     text=f"🚨 Новая заявка на вывод:\n\n"
                          f"ID пользователя: {user_id}\n"
                          f"Сумма: {amount} звёзд\n\n"
@@ -141,14 +127,12 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
     else:
         await update.message.reply_text("Используй кнопки для взаимодействия с ботом.")
 
-# Основная функция
 async def main() -> None:
-    # Вставь сюда свой токен
-    application = Application.builder().7796947947:AAECkkEDnYm7yNclc2v-5XdxOaQvpXL84Mo").build()
+    # Вставьте сюда свой токен
+    application = Application.builder().token("7796947947:AAE0kkEDnYm7yNclc2v-5Xdx0aQvpXL84Mo").build()
 
     # Регистрация команд
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
