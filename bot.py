@@ -123,7 +123,7 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
             else:
                 # Отправляем заявку админу (тебе)
                 await context.bot.send_message(
-                    chat_id=ADMIN_ID,
+                    chat_id=7863333069
                     text=f"🚨 Новая заявка на вывод:\n\n"
                          f"ID пользователя: {user_id}\n"
                          f"Сумма: {amount} звёзд\n\n"
